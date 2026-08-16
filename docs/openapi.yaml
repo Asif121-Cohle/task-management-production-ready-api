@@ -1,0 +1,6 @@
+openapi: 3.0.3
+info:
+  title: Task Management API
+  version: 1.0.0
+  description: Placeholder OpenAPI file for Phase 1. Full endpoint docs will be added in Phase 10.
+paths: {}
