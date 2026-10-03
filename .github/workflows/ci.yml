@@ -32,6 +32,9 @@ jobs:
 
       - name: Test
         working-directory: backend
+        env:
+          MONGO_URI: mongodb://127.0.0.1:27017/test
+          JWT_SECRET: ci-test-secret
         run: npm test
 
       - name: Build Docker image
