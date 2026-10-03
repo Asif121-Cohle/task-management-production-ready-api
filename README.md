@@ -1,4 +1,4 @@
-# Task Management API
+# Task Management API With CI-CD Pipeline
 
 A production-oriented modular monolith for managing users, projects, and tasks. It demonstrates Node.js, Express, MongoDB, Mongoose, JWT authentication, role-based authorization, validation, testing, Docker, Kubernetes, Minikube, and GitHub Actions.
 
