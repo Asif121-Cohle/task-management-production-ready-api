@@ -2,5 +2,300 @@ openapi: 3.0.3
 info:
   title: Task Management API
   version: 1.0.0
-  description: Placeholder OpenAPI file for Phase 1. Full endpoint docs will be added in Phase 10.
-paths: {}
+  description: REST API for authenticated task and project management.
+servers:
+  - url: http://localhost:5000
+tags:
+  - name: System
+  - name: Authentication
+  - name: Projects
+  - name: Tasks
+paths:
+  /api/v1:
+    get:
+      tags: [System]
+      summary: API welcome endpoint
+      responses:
+        '200':
+          description: API is running
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SuccessResponse'}
+  /api/v1/health:
+    get:
+      tags: [System]
+      summary: Health check
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HealthResponse'}
+  /api/v1/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RegisterRequest'}
+      responses:
+        '201': {description: User registered}
+        '409': {description: Email already exists}
+        '422': {description: Validation error}
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login and receive a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+      responses:
+        '200': {description: Login successful}
+        '401': {description: Invalid credentials}
+  /api/v1/auth/me:
+    get:
+      tags: [Authentication]
+      security: [{bearerAuth: []}]
+      summary: Get the current user
+      responses:
+        '200': {description: Current user}
+        '401': {description: Authentication required}
+  /api/v1/projects:
+    post:
+      tags: [Projects]
+      security: [{bearerAuth: []}]
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProjectInput'}
+      responses:
+        '201': {description: Project created}
+        '401': {description: Authentication required}
+    get:
+      tags: [Projects]
+      security: [{bearerAuth: []}]
+      summary: List accessible projects
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/Limit'}
+      responses:
+        '200': {description: Paginated projects}
+  /api/v1/projects/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    get:
+      tags: [Projects]
+      security: [{bearerAuth: []}]
+      summary: Get an accessible project
+      responses:
+        '200': {description: Project found}
+        '404': {description: Project not found or inaccessible}
+    put:
+      tags: [Projects]
+      security: [{bearerAuth: []}]
+      summary: Update a project as owner or admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProjectInput'}
+      responses:
+        '200': {description: Project updated}
+        '403': {description: Not project owner}
+    delete:
+      tags: [Projects]
+      security: [{bearerAuth: []}]
+      summary: Delete a project as owner or admin
+      responses:
+        '200': {description: Project deleted}
+  /api/v1/projects/{id}/members:
+    post:
+      tags: [Projects]
+      security: [{bearerAuth: []}]
+      summary: Add a project member
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: {$ref: '#/components/schemas/ObjectId'}
+      responses:
+        '200': {description: Member added}
+        '403': {description: Not project owner}
+  /api/v1/tasks:
+    post:
+      tags: [Tasks]
+      security: [{bearerAuth: []}]
+      summary: Create a task in an accessible project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TaskInput'}
+      responses:
+        '201': {description: Task created}
+        '404': {description: Project inaccessible}
+    get:
+      tags: [Tasks]
+      security: [{bearerAuth: []}]
+      summary: List accessible tasks
+      parameters:
+        - {name: status, in: query, schema: {type: string, enum: [todo, in_progress, completed]}}
+        - {name: priority, in: query, schema: {type: string, enum: [low, medium, high]}}
+        - {name: project, in: query, schema: {$ref: '#/components/schemas/ObjectId'}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/Limit'}
+      responses:
+        '200': {description: Paginated tasks}
+  /api/v1/tasks/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    get:
+      tags: [Tasks]
+      security: [{bearerAuth: []}]
+      summary: Get an accessible task
+      responses:
+        '200': {description: Task found}
+        '404': {description: Task not found or inaccessible}
+    put:
+      tags: [Tasks]
+      security: [{bearerAuth: []}]
+      summary: Update an accessible task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TaskUpdate'}
+      responses:
+        '200': {description: Task updated}
+    delete:
+      tags: [Tasks]
+      security: [{bearerAuth: []}]
+      summary: Delete an accessible task
+      responses:
+        '200': {description: Task deleted}
+  /api/v1/tasks/{id}/status:
+    patch:
+      tags: [Tasks]
+      security: [{bearerAuth: []}]
+      summary: Change task status
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [todo, in_progress, completed]}
+      responses:
+        '200': {description: Status updated}
+  /api/v1/tasks/{id}/assign:
+    patch:
+      tags: [Tasks]
+      security: [{bearerAuth: []}]
+      summary: Assign or unassign a project member
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId:
+                  oneOf:
+                    - {$ref: '#/components/schemas/ObjectId'}
+                    - {type: 'null'}
+      responses:
+        '200': {description: Assignment updated}
+        '422': {description: User is not a project member}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/ObjectId'}
+    Page:
+      name: page
+      in: query
+      schema: {type: integer, minimum: 1, default: 1}
+    Limit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+  schemas:
+    ObjectId:
+      type: string
+      pattern: '^[a-fA-F0-9]{24}$'
+      example: 507f1f77bcf86cd799439011
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: {type: string, minLength: 2, maxLength: 100}
+        email: {type: string, format: email}
+        password: {type: string, minLength: 8, format: password}
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: {type: string, format: email}
+        password: {type: string, format: password}
+    ProjectInput:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string, minLength: 2, maxLength: 120}
+        description: {type: string, maxLength: 1000}
+    TaskInput:
+      type: object
+      required: [title, project]
+      properties:
+        title: {type: string, minLength: 2, maxLength: 180}
+        description: {type: string, maxLength: 2000}
+        project: {$ref: '#/components/schemas/ObjectId'}
+        assignedTo: {$ref: '#/components/schemas/ObjectId'}
+        status: {type: string, enum: [todo, in_progress, completed]}
+        priority: {type: string, enum: [low, medium, high]}
+        dueDate: {type: string, format: date-time, nullable: true}
+    TaskUpdate:
+      type: object
+      properties:
+        title: {type: string}
+        description: {type: string}
+        priority: {type: string, enum: [low, medium, high]}
+        dueDate: {type: string, format: date-time, nullable: true}
+    SuccessResponse:
+      type: object
+      properties:
+        success: {type: boolean}
+        message: {type: string}
+    HealthResponse:
+      type: object
+      properties:
+        success: {type: boolean}
+        status: {type: string, enum: [healthy, degraded]}
+        database: {type: string}
+        timestamp: {type: string, format: date-time}

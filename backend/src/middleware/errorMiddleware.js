@@ -62,6 +62,7 @@ const mapError = (error) => {
 
 export const errorMiddleware = (error, _req, res, _next) => {
 	const mapped = mapError(error);
+	console.error(`[${mapped.errorCode}] ${error.message}`);
 
 	const payload = {
 		success: false,
