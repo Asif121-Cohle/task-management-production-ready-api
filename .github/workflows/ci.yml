@@ -23,13 +23,17 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
+        working-directory: backend
         run: npm ci
 
       - name: Lint
+        working-directory: backend
         run: npm run lint
 
       - name: Test
+        working-directory: backend
         run: npm test
 
       - name: Build Docker image
+        working-directory: backend
         run: docker build --tag task-management-api:${{ github.sha }} .
